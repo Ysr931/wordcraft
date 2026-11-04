@@ -44,6 +44,7 @@ pub struct DocState {
     pub(super) view: ViewState,
     pub(super) pending: Option<CharProps>,
     pub(super) path: Option<PathBuf>,
+    pub(super) file_stamp: Option<crate::io::FileStamp>,
     pub(super) file_name: Option<String>,
     pub(super) dirty: bool,
     pub(super) pending_move: Option<crate::cmd::moves::PendingMove>,
@@ -98,6 +99,7 @@ impl DocState {
             view,
             pending: None,
             path: None,
+            file_stamp: None,
             file_name: None,
             dirty: false,
             pending_move: None,
@@ -198,6 +200,7 @@ impl Session {
             view: _,
             pending: _,
             path: _,
+            file_stamp: _,
             file_name: _,
             dirty: _,
             pending_move: _,
@@ -287,6 +290,7 @@ impl Session {
             view,
             pending,
             path,
+            file_stamp,
             file_name,
             dirty,
             pending_move,
@@ -334,6 +338,7 @@ impl Session {
         swap(&mut self.view, view);
         swap(&mut self.pending, pending);
         swap(&mut self.path, path);
+        swap(&mut self.file_stamp, file_stamp);
         swap(&mut self.file_name, file_name);
         swap(&mut self.dirty, dirty);
         swap(&mut self.pending_move, pending_move);

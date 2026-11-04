@@ -327,7 +327,8 @@ impl WordApp {
                 // otherwise dropped: a failed write (no permission, disk full, a bad path) left the
                 // Save As page sitting there with nothing to say why, since its own render loop
                 // skips the status bar while Backstage is open. `fail_save_as` reaches both.
-                let result = picked.map(|path| self.run("file.save", json!({"path": path})));
+                // Der Dateidialog hat vor dem Ersetzen schon gefragt.
+                let result = picked.map(|path| self.run("file.save", json!({"path": path, "overwrite": true})));
                 let saved = matches!(&result, Some(Ok(v)) if v.get("saved").and_then(Value::as_bool) == Some(true) || v.get("downloaded").is_some());
                 if saved {
                     self.ui.backstage = false;

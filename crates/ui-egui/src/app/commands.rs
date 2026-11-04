@@ -315,6 +315,11 @@ impl WordApp {
                 file_dialogs::Asked::Busy => Ok(json!({"saved": false})),
             };
         }
+        // Skripte und Agenten bekommen einen Fehler (`execute`), hier fragt die App nach.
+        if self.save_needs_asking(id, &params) {
+            self.ask_file_changed();
+            return Ok(json!({"pending": "fileChanged"}));
+        }
         let retry = (id == "file.open").then(|| params.clone());
         let retry_path = retry.clone();
         let r = self.execute(id, params);
@@ -710,6 +715,10 @@ impl WordApp {
                     return Some(Err("`answer` must be save, dontSave or cancel".into()));
                 };
                 return Some(self.answer_save_changes(choice));
+            }
+            "ui.fileChanged" => {
+                let answer = s("answer").unwrap_or_default().to_string();
+                return Some(self.answer_file_changed(&answer));
             }
             "ui.openFileDialog" => {
                 self.open_dialog();

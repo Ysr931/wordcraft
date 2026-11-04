@@ -35,6 +35,11 @@ impl WordApp {
                     file_dialogs::Asked::Busy => Ok(json!({"done": false})),
                 };
             }
+            // Die Datei wurde von außen geändert: Das Schließen bleibt aus, bis das geklärt ist.
+            SaveChoice::Save if self.services.download.is_none() && self.session.file_changed_elsewhere() => {
+                self.ask_file_changed();
+                return Ok(json!({"pending": "fileChanged"}));
+            }
             SaveChoice::Save => match self.save_for_prompt() {
                 Ok(PromptSave::Saved) => true,
                 Ok(PromptSave::NotSaved) => false,
@@ -415,6 +420,10 @@ impl WordApp {
             if let Err(e) = self.session.run("file.save", &json!({})) {
                 log::warn!("AutoSave failed: {e}");
                 self.autosave_path = None;
+                if wordcraft_engine::io::changed_elsewhere(&e.to_string()) {
+                    self.autosave_met_changed_file();
+                    return;
+                }
                 self.status(i18n::fmt(tl!("AutoSave failed: {error}. Save the document to turn AutoSave back on."), &[("error", &e.to_string())]));
             }
         }

@@ -70,6 +70,7 @@ impl Session {
             pending: _,
             last_highlight: _,
             path: _,
+            file_stamp: _,
             file_name: _,
             // The custom dictionary file, like the file path: host wiring, not an edit.
             user_dict_path: _,

@@ -41,6 +41,7 @@ pub(super) fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
         Dialog::About { .. } => about_dialog(ui, d),
         Dialog::DiscardRecovery { .. } => discard_recovery_dialog(app, ui, d),
         Dialog::SaveChanges { .. } => save_changes_dialog(app, ui, d),
+        Dialog::FileChanged { .. } => crate::app::file_changed_dialog(app, ui, d),
         Dialog::RecipientList { fields, rows, message, filter } => recipient_list(app, ui, fields, rows, message, filter),
         Dialog::InsertMergeField { .. } => insert_merge_field_dialog(app, ui, d),
         Dialog::Password { .. } => password_dialog(app, ui, d),

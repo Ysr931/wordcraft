@@ -12,6 +12,7 @@ use super::{
 
 mod commands;
 mod control;
+mod file_changed;
 mod files;
 mod fonts;
 mod frame;
@@ -20,6 +21,7 @@ mod pictures;
 mod prefs;
 
 pub(crate) use commands::{discards_document, works_without_document};
+pub(crate) use file_changed::file_changed_dialog;
 pub(crate) use input::control_click_as_secondary;
 
 impl WordApp {

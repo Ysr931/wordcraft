@@ -93,7 +93,7 @@ pub fn specs() -> Vec<CommandSpec> {
             .pure(),
         CommandSpec::new("file.save", "Save", "File", save)
             .key("Mod+S / Shift+F12 / Alt+Shift+F2")
-            .params(r#"{"path"?: string, "password"?: string (encrypt this and later saves with it, as file.encrypt does), "markup"?: bool (Print Markup for a PDF, PNG, HTML, Markdown or text copy: comments shown; default file.printMarkup), "format"?: "wordml2003" (an .xml file as a Word 2003 XML Document) | "flatopc" (as a Word XML Document, the default; saving over a Word 2003 XML file keeps that format)}"#)
+            .params(r#"{"path"?: string, "password"?: string (encrypt this and later saves with it, as file.encrypt does), "markup"?: bool (Print Markup for a PDF, PNG, HTML, Markdown or text copy: comments shown; default file.printMarkup), "format"?: "wordml2003" (an .xml file as a Word 2003 XML Document) | "flatopc" (as a Word XML Document, the default; saving over a Word 2003 XML file keeps that format), "overwrite"?: bool (replace the document's own file even if it changed on disk since it was opened or last saved here; without it that is an error)}"#)
             .pure(),
         CommandSpec::new("file.saveAs", "Save As", "File", save_as).key(super::mac_or("F12 / Mod+Shift+S", "F12 / Alt+F2")).params(r#"{"path": string, "password"?: string, "markup"?: bool, "format"?: string (as file.save)}"#).pure(),
         // Pure: the password must not land in Repeat or a recorded macro, and it isn't an edit
@@ -252,6 +252,8 @@ fn open(s: &mut Session, v: &Value) -> CmdResult {
         );
     }
     let password = p::str(v, "password");
+    // Vor dem Lesen: Eine Änderung, die während des Lesens passiert, zählt dann noch als Änderung.
+    let stamp = if p::str(v, "data").is_none() { crate::io::file_stamp(std::path::Path::new(path)) } else { None };
     let (mut doc, encrypted) = if let Some(data) = p::str(v, "data") {
         let bytes = super::insert::base64_decode(data).ok_or_else(|| CmdError::Params("bad base64".into()))?;
         // An empty file (File Explorer's New › Microsoft Word Document makes one) opens as a new
@@ -284,6 +286,7 @@ fn open(s: &mut Session, v: &Value) -> CmdResult {
         super::view::restore_zoom(s, z);
     }
     s.path = Some(path.into());
+    s.file_stamp = stamp;
     // Like Word, a document opened with a password is saved with it again.
     if encrypted {
         s.password = password.map(crate::io::Password::new);
@@ -340,6 +343,10 @@ fn save(s: &mut Session, v: &Value) -> CmdResult {
             return Ok(json!({"saved": false}));
         }
     };
+    // Eine von außen geänderte Datei wird nur mit ausdrücklicher Zustimmung ersetzt (io/file_stamp.rs).
+    if s.path.as_deref() == Some(path.as_path()) && p::bool(v, "overwrite") != Some(true) && s.file_changed_elsewhere() {
+        return Err(CmdError::Failed(crate::io::CHANGED_ELSEWHERE.into()));
+    }
     if let Some(pw) = v.get("password").filter(|pw| !pw.is_null()) {
         let Some(pw) = pw.as_str().filter(|pw| !pw.is_empty()) else {
             return Err(CmdError::Params("`password` must be a non-empty string (file.encrypt removes a password)".into()));
@@ -382,6 +389,7 @@ fn save(s: &mut Session, v: &Value) -> CmdResult {
     let own_file = s.path.as_deref() == Some(path.as_path());
     if own_file || ["docx", "docm", "dotx", "dotm", "odt", "rtf", "json", "xml"].contains(&ext.as_str()) {
         s.path = Some(path.clone());
+        s.file_stamp = crate::io::file_stamp(&path);
         s.dirty = false;
         s.relayout();
     }
@@ -406,7 +414,12 @@ fn save_as(s: &mut Session, v: &Value) -> CmdResult {
         s.push_ui_request(json!({"open": "saveAs"}));
         return Ok(json!({"saved": false}));
     }
-    save(s, v)
+    // Wer eine Datei ausdrücklich als Ziel nennt, hat dem Ersetzen schon zugestimmt.
+    let mut v = v.clone();
+    if let Some(o) = v.as_object_mut() {
+        o.insert("overwrite".into(), json!(true));
+    }
+    save(s, &v)
 }
 
 /// How a copy is written: Print Markup from the command's `markup`, else the File › Print

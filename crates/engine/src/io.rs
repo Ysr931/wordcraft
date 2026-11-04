@@ -5,6 +5,9 @@ use wordcraft_doc::Document;
 #[cfg(not(target_arch = "wasm32"))]
 mod safe_save;
 
+mod file_stamp;
+pub use file_stamp::{CHANGED_ELSEWHERE, FileStamp, changed_elsewhere, file_stamp};
+
 /// Formats WordCraft opens.
 pub const OPEN_EXTS: &[&str] = &[
     "docx",

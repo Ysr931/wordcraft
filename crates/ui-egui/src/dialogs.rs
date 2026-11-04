@@ -331,6 +331,13 @@ pub enum Dialog {
         #[serde(default)]
         message: String,
     },
+    /// Die Datei wurde von außen geändert, bevor Speichern sie ersetzen würde
+    /// (`app/file_changed.rs`). Gilt für das Dokument `document`.
+    FileChanged {
+        name: String,
+        #[serde(skip)]
+        document: u64,
+    },
     /// Mailings › Select Recipients / Edit Recipient List: a table of recipients to type or
     /// edit (field names on top), or a file to load instead (#240).
     RecipientList {
@@ -508,6 +515,7 @@ impl Dialog {
             Dialog::PasteSpecial { .. } => "pasteSpecial",
             Dialog::About { .. } => "about",
             Dialog::SaveChanges { .. } => "saveChanges",
+            Dialog::FileChanged { .. } => "fileChanged",
             Dialog::DiscardRecovery { .. } => "discardRecovery",
             Dialog::RecipientList { .. } => "recipientList",
             Dialog::SelectTable { .. } => "selectTable",
